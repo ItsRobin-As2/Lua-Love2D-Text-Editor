@@ -1,9 +1,7 @@
 screenWidth = 1000  -- Resizable
 screenHeight = 620  -- Resizable
-local logged = false
-local blink = false
-local file = ""
-local username = ""
+local logged, blink = false, false
+local file, username = "", ""
 local newCanvas = love.graphics.newCanvas();
 local currentFile
 local currentBox, currLine, buttonClicked, timer = 0, 1, 0, 0
@@ -11,6 +9,7 @@ local userBoxX, userBoxY, userBoxW, userBoxH
 local fileBoxX, fileBoxY, fileBoxW, fileBoxH
 local submitButtonX, submitButtonY, submitButtonW, submitButtonH
 local usernameBoxIsClicked, fileBoxIsClicked, submitButtonClicked, mainMenuClicked = false, false, false, false
+local exitWindowBool, saveToFileBool = false, false
 local colors = {
     white = {0.9, 0.9, 0.9},
     textWhite = {1, 1, 1},
@@ -22,11 +21,12 @@ local colors = {
     darkBlack = {6/255, 6/255, 6/255},
     lightGreen = {16/255, 196/255, 42/255},
     green = {11/255, 133/255, 29/255}
-} -- Colors used for different purposes
+} -- All colors used in the application
 local lines = {
     -- Editor Text
-} -- It Stores the lines visible in screen
+} -- Stores the lines visible in the screen
 
+-- Love2d load function
 function love.load()
     love.keyboard.setKeyRepeat(true)
     -- Set Background Color to Black
@@ -60,6 +60,7 @@ function love.load()
     end
 end
 
+-- Love2d update function
 function love.update(dt)
     timer = timer + dt
     if timer >= 0.75 then
@@ -68,6 +69,7 @@ function love.update(dt)
     end
 end
 
+-- Love2d draw function
 function love.draw()
     -- Get Windows Height & Width
     screenWidth = love.graphics.getWidth()
@@ -88,6 +90,7 @@ function love.draw()
     end
 end
 
+-- Takes text as input
 function love.textinput(t)
     if logged == true then
         if lines[currLine] then
@@ -209,6 +212,33 @@ function love.mousepressed( x, y, button)
                         and (y > 82 + screenHeight / 17.5 and y < 82 + 2 * (screenHeight / 17.5)) then
                     buttonClicked = 11
                 end
+                -- Something is going on here
+                if buttonClicked == 8 then
+                    -- If yes is clicked in sub window
+                    if (x > screenWidth / 2 - 359 / 2 + 280 and x < screenWidth / 2 - 359 / 2 + 180)
+                            and (y > screenHeight / 2 - 45 and y < screenHeight / 2 + 125) then
+                        saveToFileBool = true
+                    end
+                    -- If no is clicked in sub window
+                    if (x > screenWidth / 2 - 359 / 2 + 80 and x < screenWidth / 2 + 112)
+                            and (y > screenHeight / 2 - 45 and y < screenHeight / 2 + 125) then
+                        saveToFileBool = false
+                        buttonClicked = 0
+                    end
+                end
+                if buttonClicked == 11 then
+                    -- If yes is clicked in exit window prompt
+                    if (x > screenWidth / 2 - 113 and x < screenWidth / 2 - 13)
+                            and (y > screenHeight / 2 - 45 and y < screenHeight / 2 + 125) then
+                        exitWindowBool = true
+                    end
+                    -- If no is clicked in exit window prompt
+                    if (x > screenWidth / 2 + 12 and x < screenWidth / 2 + 112)
+                            and (y > screenHeight / 2 - 45 and y < screenHeight / 2 + 125) then
+                        exitWindowBool = false
+                        buttonClicked = 0
+                    end
+                end
             end
         end
     end
@@ -322,10 +352,10 @@ function loadAllText()
     -- Main menu buttons text
     button1Text = love.graphics.newText(bricolageFontSmall, "New File")
     button2Text = love.graphics.newText(bricolageFontSmall, "Rename")
-    button3Text = love.graphics.newText(bricolageFontSmall, "Empty1")
+    button3Text = love.graphics.newText(bricolageFontSmall, "Delete")
     button4Text = love.graphics.newText(bricolageFontSmall, "Empty2")
     button5Text = love.graphics.newText(bricolageFontSmall, "Empty3")
-    button6Text = love.graphics.newText(bricolageFontSmall, "Empty4")
+    button6Text = love.graphics.newText(bricolageFontSmall, "Clear")
     button7Text = love.graphics.newText(bricolageFontSmall, {{0.5, 0.3, 0.8}, "Change Editor Color"})
     button8Text = love.graphics.newText(bricolageFontSmall, "Save")
     button9Text = love.graphics.newText(bricolageFontSmall, "Save As")
@@ -588,7 +618,7 @@ function mainMenu()
         end
         -- button 3
         btnX = btnX + btnW + 8
-        width3Text = font:getWidth("Empty1")
+        width3Text = font:getWidth("Delete")
         textX = (btnW / 2 - width3Text / 4) + btnX - 5;
         if buttonClicked == 3 then
             drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
@@ -621,7 +651,7 @@ function mainMenu()
         end
         -- button 6
         btnX = btnX + btnW + 8
-        width6Text = font:getWidth("Empty4")
+        width6Text = font:getWidth("Clear")
         textX = btnX + (btnW / 2 - width6Text / 4) - 5;
         if buttonClicked == 6 then
             drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
@@ -687,6 +717,9 @@ function mainMenu()
             drawButton(btnX, btnY, btnW, btnH)
             drawText(button11Text, textX, textY)
         end
+        if buttonClicked ~= 0 then
+            performAction()
+        end
     end
 end
 
@@ -743,11 +776,158 @@ function caretBlinking(X, Y)
     end
 end
 
--- Close the window
-function exit()
-    love.windows.close();
+-- Performs different operations in main menu
+function performAction()
+    if buttonClicked == 1 then
+        creatingNewFile()
+    elseif buttonClicked == 2 then
+        renameFile()
+    elseif buttonClicked == 3 then
+        deleteCurrFile()
+    elseif buttonClicked == 4 then
+        -- Empty2
+    elseif buttonClicked == 5 then
+        -- Empty3
+    elseif buttonClicked == 6 then
+        clearAllData()
+    elseif buttonClicked == 7 then
+        changeEditorColor()
+    elseif buttonClicked == 8 then
+        saveDataToFile()
+    elseif buttonClicked == 9 then
+        saveFileAs()
+    elseif buttonClicked == 10 then
+        openSettings()
+    elseif buttonClicked == 11 then
+        exitWindow()
+    end
 end
 
--- Create Exit screen asking "Do you want to exit?"
--- Write all lines to the open file
--- Read all lines from the open file and write them to screen
+-- Creating a new file
+function creatingNewFile()
+    love.graphics.setColor(colors.red)
+    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
+end
+
+-- Rename an existing file
+function renameFile()
+    love.graphics.setColor(colors.red)
+    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
+end
+
+-- Delete currently opened file
+function deleteCurrFile()
+    love.graphics.setColor(colors.red)
+    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
+end
+
+-- Clear Entire Screen (Work In Progress)
+function clearAllData()
+    -- Doesn't work properly right now
+    lines = {}
+    currLine = 1
+    buttonClicked = 0
+    mainMenuClicked = false
+end
+
+-- change editor window color
+function changeEditorColor()
+    love.graphics.setColor(colors.red)
+    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
+end
+
+-- save file (Work In Progress)
+function saveDataToFile()
+    local txt = "Write data to file?"
+    local txtW = ABZText:getWidth(txt)
+    local saveWinH = 170;
+    local saveWinW = txtW + 150 -- 209
+    local saveWinX = screenWidth / 2 - saveWinW / 2 + 10
+    local saveWinY = screenHeight / 2 - saveWinH / 2 - 40
+    love.graphics.setColor(colors.white)
+    love.graphics.rectangle("fill", saveWinX, saveWinY, saveWinW, saveWinH, 10)
+    love.graphics.setColor(colors.lightBlack2)
+    love.graphics.rectangle("fill", saveWinX + 1, saveWinY + 1, saveWinW - 2, saveWinH - 2, 10)
+    love.graphics.setColor(colors.white)
+    love.graphics.print(txt, ABZText, screenWidth / 2 - txtW / 2 + 10, saveWinY + 30)
+    -- Yes
+    local Yes_BtnX = saveWinX + 70; local Yes_BtnY = saveWinY + saveWinH - 90
+    local Yes_BtnW = 100; local Yes_BtnH = 50
+    love.graphics.setColor(colors.white)
+    love.graphics.rectangle("fill", Yes_BtnX, Yes_BtnY, Yes_BtnW, Yes_BtnH, 5)
+    love.graphics.setColor(colors.lightBlack2)
+    love.graphics.rectangle("fill", Yes_BtnX + 1, Yes_BtnY + 1, Yes_BtnW - 2, Yes_BtnH - 2, 5)
+    love.graphics.setColor(colors.white)
+    love.graphics.print("Yes", ABZText, Yes_BtnX + Yes_BtnW / 3.5, Yes_BtnY + Yes_BtnH / 5)
+    -- No
+    local No_BtnX = saveWinX + Yes_BtnW + 100; local No_BtnY = saveWinY + saveWinH - 90
+    local No_BtnW = 100; local No_BtnH = 50
+    love.graphics.setColor(colors.white)
+    love.graphics.rectangle("fill", No_BtnX, No_BtnY, No_BtnW, No_BtnH, 5)
+    love.graphics.setColor(colors.lightBlack2)
+    love.graphics.rectangle("fill", No_BtnX + 1, No_BtnY + 1, No_BtnW - 2, No_BtnH - 2, 5)
+    love.graphics.setColor(colors.white)
+    love.graphics.print("No", ABZText, No_BtnX + No_BtnW / 3, No_BtnY + No_BtnH / 5)
+    -- Save data to file if user clicked yes
+    if saveToFileBool then
+        -- local saveToFile, error = io.open("files/" .. file, "w")
+        print(file)
+        for _, line in pairs(lines) do
+            love.filesystem.write("files/" .. file, line)
+        end
+        -- saveToFile:close()
+    end
+end
+
+-- save file as
+function saveFileAs()
+    love.graphics.setColor(colors.red)
+    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
+end
+
+-- open settings window
+function openSettings()
+    love.graphics.setColor(colors.red)
+    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
+end
+
+-- Prompt for closing the window
+function exitWindow()
+    local text = "Do you want to exit?"
+    local textW = ABZText:getWidth(text) -- 236
+    local exitWindowH = 170; local exitWindowW = textW + 150
+    local exitWindowPosX = screenWidth / 2 - exitWindowW / 2
+    local exitWindowPosY = screenHeight / 2 - exitWindowH / 2 - 40
+    love.graphics.setColor(colors.white)
+    love.graphics.rectangle("fill", exitWindowPosX, exitWindowPosY, exitWindowW, exitWindowH, 10)
+    love.graphics.setColor(colors.lightBlack2)
+    love.graphics.rectangle("fill", exitWindowPosX + 1, exitWindowPosY + 1, exitWindowW - 2, exitWindowH - 2, 10)
+    love.graphics.setColor(colors.white)
+    love.graphics.print(text, ABZText, screenWidth / 2 - textW / 2, exitWindowPosY + 30)
+    -- Yes
+    local Yes_BtnX = exitWindowPosX + 80; local Yes_BtnY = exitWindowPosY + exitWindowH - 90
+    local Yes_BtnW = 100; local Yes_BtnH = 50
+    love.graphics.setColor(colors.white)
+    love.graphics.rectangle("fill", Yes_BtnX, Yes_BtnY, Yes_BtnW, Yes_BtnH, 5)
+    love.graphics.setColor(colors.lightBlack2)
+    love.graphics.rectangle("fill", Yes_BtnX + 1, Yes_BtnY + 1, Yes_BtnW - 2, Yes_BtnH - 2, 5)
+    love.graphics.setColor(colors.white)
+    love.graphics.print("Yes", ABZText, Yes_BtnX + Yes_BtnW / 3.5, Yes_BtnY + Yes_BtnH / 5)
+    -- No
+    local No_BtnX = exitWindowPosX + Yes_BtnW + 105; local No_BtnY = exitWindowPosY + exitWindowH - 90
+    local No_BtnW = 100; local No_BtnH = 50
+    love.graphics.setColor(colors.white)
+    love.graphics.rectangle("fill", No_BtnX, No_BtnY, No_BtnW, No_BtnH, 5)
+    love.graphics.setColor(colors.lightBlack2)
+    love.graphics.rectangle("fill", No_BtnX + 1, No_BtnY + 1, No_BtnW - 2, No_BtnH - 2, 5)
+    love.graphics.setColor(colors.white)
+    love.graphics.print("No", ABZText, No_BtnX + No_BtnW / 3, No_BtnY + No_BtnH / 5)
+    -- Close window if yes is clicked
+    if exitWindowBool then
+        love.graphics.setColor(colors.lightBlack2)
+        love.graphics.rectangle("fill", Yes_BtnX, Yes_BtnY, Yes_BtnW, Yes_BtnH, 5)
+        love.graphics.setColor(colors.red)
+        love.graphics.print("Yes", ABZText, Yes_BtnX + Yes_BtnW / 3.5, Yes_BtnY + Yes_BtnH / 5)
+        love.event.quit(0)
+    end
+end
