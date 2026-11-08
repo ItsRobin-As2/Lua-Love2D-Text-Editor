@@ -1,16 +1,8 @@
+require("options")
+
 screenWidth = 1000  -- Resizable
 screenHeight = 620  -- Resizable
-local logged, blink = false, false
-local file, username = "", ""
-local newCanvas = love.graphics.newCanvas();
-local currentFile
-local currentBox, currLine, buttonClicked, timer = 0, 1, 0, 0
-local userBoxX, userBoxY, userBoxW, userBoxH
-local fileBoxX, fileBoxY, fileBoxW, fileBoxH
-local submitButtonX, submitButtonY, submitButtonW, submitButtonH
-local usernameBoxIsClicked, fileBoxIsClicked, submitButtonClicked, mainMenuClicked = false, false, false, false
-local exitWindowBool, saveToFileBool = false, false
-local colors = {
+colors = {
     white = {0.9, 0.9, 0.9},
     textWhite = {1, 1, 1},
     yellow = {252/255, 232/255, 3/255},
@@ -22,9 +14,24 @@ local colors = {
     lightGreen = {16/255, 196/255, 42/255},
     green = {11/255, 133/255, 29/255}
 } -- All colors used in the application
-local lines = {
+lines = {
     -- Editor Text
 } -- Stores the lines visible in the screen
+errors = {
+    error1 = false, -- New File Error
+    error2 = false, -- Rename Error
+} -- different types of error in the application
+currLine, buttonClicked = 1, 0
+mainMenuClicked, saveToFileBool, exitWindowBool = false, false, false
+file, username, tempText = "", "", ""
+currentFile = nil
+local logged, blink = false, false
+local newCanvas = love.graphics.newCanvas();
+local currentBox, timer = 0, 1, 0
+local userBoxX, userBoxY, userBoxW, userBoxH
+local fileBoxX, fileBoxY, fileBoxW, fileBoxH
+local submitButtonX, submitButtonY, submitButtonW, submitButtonH
+local usernameBoxIsClicked, fileBoxIsClicked, submitButtonClicked = false, false, false
 
 -- Love2d load function
 function love.load()
@@ -50,13 +57,12 @@ function love.load()
         infoFile:close()
     end
     if file ~= "" and file ~= nil then
-        currentFile = io.open("files/" .. file, "r")
-        if currentFile then
-            for currentLine in currentFile:read("*l") do
-                table.insert(lines, currentLine)
-            end
-            currentFile:close()
-        end
+        --Doesn't work right now needs fixes
+        -- local filePath = "files/" .. file
+        -- for line in love.filesystem.lines(filePath) do
+        --     table.insert(lines, line)
+        --     currLine = currLine + 1
+        -- end
     end
 end
 
@@ -93,14 +99,53 @@ end
 -- Takes text as input
 function love.textinput(t)
     if logged == true then
-        if lines[currLine] then
-            lines[currLine] = lines[currLine] .. t
+        if not mainMenuClicked then
+            if lines[currLine] then
+                lines[currLine] = lines[currLine] .. t
+                -- This part keeps caret visible while writing
+                blink = true
+                if timer >= 0 then
+                    timer = timer - 0.5
+                end
+            else
+                lines[currLine] = t
+            end
+        elseif buttonClicked == 1 then
+            errors.error1 = false
+            if #tempText > 16 then
+                return
+            end
+            tempText = tempText .. t
+            -- This part keeps caret visible while writing
             blink = true
             if timer >= 0 then
                 timer = timer - 0.5
             end
-        else
-            lines[currLine] = t
+            -- Check if a file exists
+            local filePath = "files/" .. tempText
+            if love.filesystem.getInfo(filePath) then
+                errors.error1 = true
+            else
+                errors.error1 = false
+            end
+        elseif buttonClicked == 2 then
+            errors.error2 = false
+            if #tempText > 16 then
+                return
+            end
+            tempText = tempText .. t
+            -- This part keeps caret visible while writing
+            blink = true
+            if timer >= 0 then
+                timer = timer - 0.5
+            end
+            -- Check if a file exists
+            local filePath = "files/" .. tempText
+            if love.filesystem.getInfo(filePath) then
+                errors.error2 = true
+            else
+                errors.error2 = false
+            end
         end
     else
         -- Takes input in username field & file field
@@ -160,68 +205,93 @@ function love.mousepressed( x, y, button)
                 -- Check if button1 of main menu is clicked
                 if (x > 14 and x < 14 + (screenWidth - 6 * 7 - 72) / 7.2)
                         and (y > 72 and y < 72 + screenHeight / 17.5) then
+                    if buttonClicked == 1 then return end
                     buttonClicked = 1
+                    tempText = ""
                 end
                 -- Check if button2 of main menu is clicked
                 if (x > 22 + (screenWidth - 6 * 7 - 72) / 7.2 and x < 22 + 2 * ((screenWidth - 6 * 7 - 72) / 7.2))
                         and (y > 72 and y < 72 + screenHeight / 17.5) then
+                    if buttonClicked == 2 then return end
                     buttonClicked = 2
+                    tempText = ""
                 end
                 -- Check if button3 of main menu is clicked
                 if (x > 30 + 2 * ((screenWidth - 6 * 7 - 72) / 7.2) and x < 30 + 3 * ((screenWidth - 6 * 7 - 72) / 7.2))
                         and (y > 72 and y < 72 + screenHeight / 17.5) then
+                    if buttonClicked == 3 then return end
                     buttonClicked = 3
                 end
                 -- Check if button4 of main menu is clicked
                 if (x > 38 + 3 * ((screenWidth - 6 * 7 - 72) / 7.2) and x < 38 + 4 * ((screenWidth - 6 * 7 - 72) / 7.2))
                         and (y > 72 and y < 72 + screenHeight / 17.5) then
+                    if buttonClicked == 4 then return end
                     buttonClicked = 4
                 end
                 -- Check if button5 of main menu is clicked
                 if (x > 46 + 4 * ((screenWidth - 6 * 7 - 72) / 7.2) and x < 46 + 5 * ((screenWidth - 6 * 7 - 72) / 7.2))
                         and (y > 72 and y < 72 + screenHeight / 17.5) then
+                    if buttonClicked == 5 then return end
                     buttonClicked = 5
                 end
                 -- Check if button6 of main menu is clicked
                 if (x > 54 + 5 * ((screenWidth - 6 * 7 - 72) / 7.2) and x < 54 + 6 * ((screenWidth - 6 * 7 - 72) / 7.2))
                         and (y > 72 and y < 72 + screenHeight / 17.5) then
+                    if buttonClicked == 6 then return end
                     buttonClicked = 6
                 end
                 -- Check if button7 of main menu is clicked
                 if (x > 54 + 6 * ((screenWidth - 6 * 7 - 72) / 7.2) and x < screenWidth - 15)
                         and (y > 72 and y < 72 + screenHeight / 17.5) then
+                    if buttonClicked == 7 then return end
                     buttonClicked = 7
                 end
                 -- Check if button8 of main menu is clicked
                 if (x > 14 and x < 14 + (screenWidth - 6 * 7 - 72) / 7.2)
                         and (y > 82 + screenHeight / 17.5 and y < 82 + 2 * (screenHeight / 17.5)) then
+                    if buttonClicked == 8 then return end
                     buttonClicked = 8
                 end
                 -- Check if button9 of main menu is clicked
                 if (x > 22 + (screenWidth - 6 * 7 - 72) / 7.2 and x < 22 + 2 * ((screenWidth - 6 * 7 - 72) / 7.2))
                         and (y > 82 + screenHeight / 17.5 and y < 82 + 2 * (screenHeight / 17.5)) then
+                    if buttonClicked == 9 then return end
                     buttonClicked = 9
                 end
                 -- Check if button10 of main menu is clicked
                 if (x > 30 + 2 * ((screenWidth - 6 * 7 - 72) / 7.2) and x < 30 + 3 * ((screenWidth - 6 * 7 - 72) / 7.2))
                         and (y > 82 + screenHeight / 17.5 and y < 82 + 2 * (screenHeight / 17.5)) then
+                    if buttonClicked == 10 then return end
                     buttonClicked = 10
                 end
                 -- Check if button11 of main menu is clicked
                 if (x > 38 + 3 * ((screenWidth - 6 * 7 - 72) / 7.2) and x < 38 + 4 * ((screenWidth - 6 * 7 - 72) / 7.2))
                         and (y > 82 + screenHeight / 17.5 and y < 82 + 2 * (screenHeight / 17.5)) then
+                    if buttonClicked == 11 then return end
                     buttonClicked = 11
                 end
                 -- Something is going on here
+                if buttonClicked == 1 then
+                    if (x > math.floor(screenWidth / 2 - 40) and x < math.floor(screenWidth / 2 + 60))
+                            and (y > math.floor(screenHeight / 2 - 145 / 2 + 45) and y < math.floor(screenHeight / 2 - 145 / 2 + 85)) then
+                        createFile()
+                    end
+                end
+                if buttonClicked == 2 then
+                    if (x > math.floor(screenWidth / 2 - 65) and x < math.floor(screenWidth / 2 + 45))
+                            and (y > math.floor(screenHeight / 2 - 145 / 2 + 45) and y < math.floor(screenHeight / 2 - 145 / 2 + 85)) then
+                        renameFile()
+                    end
+                end
                 if buttonClicked == 8 then
                     -- If yes is clicked in sub window
-                    if (x > screenWidth / 2 - 359 / 2 + 280 and x < screenWidth / 2 - 359 / 2 + 180)
-                            and (y > screenHeight / 2 - 45 and y < screenHeight / 2 + 125) then
+                    if (x > math.floor(screenWidth / 2 - 359 / 2 + 80) and x < math.floor(screenWidth / 2 - 359 / 2 + 180))
+                            and (y > screenHeight / 2 - 45 and y < screenHeight / 2 + 5) then
                         saveToFileBool = true
                     end
                     -- If no is clicked in sub window
-                    if (x > screenWidth / 2 - 359 / 2 + 80 and x < screenWidth / 2 + 112)
-                            and (y > screenHeight / 2 - 45 and y < screenHeight / 2 + 125) then
+                    if (x > math.floor(screenWidth / 2 - 359 / 2 + 210) and x < math.floor(screenWidth / 2 - 359 / 2 + 310))
+                            and (y > screenHeight / 2 - 45 and y < screenHeight / 2 + 5) then
                         saveToFileBool = false
                         buttonClicked = 0
                     end
@@ -254,15 +324,66 @@ function love.keypressed(key)
     -- Press backspace to remove last character
     if key == "backspace" then
         if logged == true then
-            if lines[currLine] == "" and currLine > 1 then
-                lines[currLine] = nil
-                currLine = currLine - 1
-            end
-            if lines[currLine] then
-                lines[currLine] = string.sub(lines[currLine], 1, #lines[currLine] - 1)
-                blink = false
-                if timer >= 0 then
-                    timer = timer - 0.5
+            if not mainMenuClicked then
+                if lines[currLine] == "" and currLine > 1 then
+                    lines[currLine] = nil
+                    currLine = currLine - 1
+                end
+                if lines[currLine] then
+                    lines[currLine] = string.sub(lines[currLine], 1, #lines[currLine] - 1)
+                    -- keeps caret hidden when removing text from screen using backspace
+                    blink = false
+                    if timer >= 0 then
+                        timer = timer - 0.5
+                    end
+                end
+            elseif buttonClicked == 1 then
+                if tempText then
+                    tempText = string.sub(tempText,1, #tempText - 1)
+                    -- Stops caret blinking
+                    blink = false
+                    if timer >= 0 then
+                        timer = timer - 0.5
+                    end
+                    -- Check if a file exists
+                    local filePath = "files/" .. tempText
+                    if love.filesystem.getInfo(filePath) then
+                        errors.error1 = true
+                    else
+                        errors.error1 = false
+                    end
+                end
+            elseif buttonClicked == 2 then
+                if tempText then
+                    tempText = string.sub(tempText,1, #tempText - 1)
+                    -- Stops caret blinking
+                    blink = false
+                    if timer >= 0 then
+                        timer = timer - 0.5
+                    end
+                    -- Check if a file exists
+                    local filePath = "files/" .. tempText
+                    if love.filesystem.getInfo(filePath) then
+                        errors.error2 = true
+                    else
+                        errors.error2 = false
+                    end
+                end
+            elseif buttonClicked == 2 then
+                if tempText then
+                    tempText = string.sub(tempText,1, #tempText - 1)
+                    -- Stops caret blinking
+                    blink = false
+                    if timer >= 0 then
+                        timer = timer - 0.5
+                    end
+                    -- Check if a file exists
+                    local filePath = "files/" .. tempText
+                    if love.filesystem.getInfo(filePath) then
+                        errors.error2 = true
+                    else
+                        errors.error2 = false
+                    end
                 end
             end
         else
@@ -275,14 +396,16 @@ function love.keypressed(key)
     end
     -- Press enter to submit username or file name
     if key == "return" then
-        if logged == true then
-            if lines[currLine] then
-                lines[currLine] = lines[currLine] .. "\n"
-            else
-                lines[currLine] = "\n"
+        if not mainMenuClicked then
+            if logged == true then
+                if lines[currLine] then
+                    lines[currLine] = lines[currLine] .. "\n"
+                else
+                    lines[currLine] = "\n"
+                end
+                currLine = currLine + 1
+                lines[currLine] = ""
             end
-            currLine = currLine + 1
-            lines[currLine] = ""
         end
         if currentBox == 0 then
             usernameBoxIsClicked = true
@@ -577,152 +700,6 @@ function drawHighlightedText(button, X, Y)
     love.graphics.draw(button, X, Y)
 end
 
--- Draws main menu
-function mainMenu()
-    -- Main Menu size & location
-    local mainMenuW = screenWidth - 10; local mainMenuH = ((screenHeight / 17.5) * 2) + 34
-    local mainMenuX = 5; local mainMenuY = 60
-    -- Check if main menu button is clicked
-    if mainMenuClicked then
-        -- Main menu icon
-        love.graphics.setColor(colors.darkBlack)
-        love.graphics.rectangle("fill", 16, 18, 28, 28, 5)
-        -- Main menu Layout
-        love.graphics.setColor(colors.white)
-        love.graphics.rectangle("fill", mainMenuX, mainMenuY, mainMenuW, mainMenuH, 5)
-        love.graphics.setColor(colors.darkBlack)
-        love.graphics.rectangle("fill", mainMenuX + 1, mainMenuY + 1, mainMenuW - 2, mainMenuH - 2, 5)
-        -- Main menu buttons
-        local btnW = (screenWidth - 6 * 7 - 72) / 7.2; local btnH = screenHeight / 17.5
-        local btnX = mainMenuX + 9; local btnY = 72
-        -- button 1
-        width1Text = font:getWidth("New File")
-        local textX = (btnW / 2 - width1Text / 4) + 3; local textY = 57 + btnH / 2
-        if buttonClicked == 1 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button1Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button1Text, textX, textY)
-        end
-        -- button 2
-        btnX = btnX + btnW + 8
-        width2Text = font:getWidth("Rename")
-        textX = (btnW / 2 - width2Text / 4) + 12 + btnW;
-        if buttonClicked == 2 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button2Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button2Text, textX, textY)
-        end
-        -- button 3
-        btnX = btnX + btnW + 8
-        width3Text = font:getWidth("Delete")
-        textX = (btnW / 2 - width3Text / 4) + btnX - 5;
-        if buttonClicked == 3 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button3Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button3Text, textX, textY)
-        end
-        -- button 4
-        btnX = btnX + btnW + 8
-        width4Text = font:getWidth("Empty2")
-        textX = btnX + (btnW / 2 - width4Text / 4) - 5;
-        if buttonClicked == 4 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button4Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button4Text, textX, textY)
-        end
-        -- button 5
-        btnX = btnX + btnW + 8
-        width5Text = font:getWidth("Empty3")
-        textX = btnX + (btnW / 2 - width5Text / 4) - 5;
-        if buttonClicked == 5 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button5Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button5Text, textX, textY)
-        end
-        -- button 6
-        btnX = btnX + btnW + 8
-        width6Text = font:getWidth("Clear")
-        textX = btnX + (btnW / 2 - width6Text / 4) - 5;
-        if buttonClicked == 6 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button6Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button6Text, textX, textY)
-        end
-        -- button 7
-        btnX = btnX + btnW + 8
-        btnW = (screenWidth - 15) - btnX
-        width7Text = font:getWidth("Change Editor Color")
-        textX = btnX + (btnW / 2 - width7Text / 4) - 20;
-        if buttonClicked == 7 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawText(button7Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button7Text, textX, textY)
-        end
-        -- button 8
-        btnX = mainMenuX + 9; btnY = btnY + btnH + 10
-        btnW = (screenWidth - 6 * 7 - 72) / 7.2
-        width8Text = font:getWidth("Save")
-        textX = btnX + (btnW / 2 - width8Text / 4) - 5; textY = textY + btnH + 10
-        if buttonClicked == 8 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button8Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button8Text, textX, textY)
-        end
-        -- button 9
-        btnX = btnX + btnW + 8
-        width9Text = font:getWidth("Save As")
-        textX = btnX + (btnW / 2 - width9Text / 4) - 7
-        if buttonClicked == 9 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button9Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button9Text, textX, textY)
-        end
-        -- button 10
-        btnX = btnX + btnW + 8
-        width10Text = font:getWidth("Settings")
-        textX = btnX + (btnW / 2 - width10Text / 4) - 8
-        if buttonClicked == 10 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button10Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button10Text, textX, textY)
-        end
-        -- button 11
-        btnX = btnX + btnW + 8
-        width11Text = font:getWidth("Exit")
-        textX = btnX + (btnW / 2 - width11Text / 4) - 4
-        if buttonClicked == 11 then
-            drawButton(btnX - 4, btnY - 4, btnW + 8, btnH + 8)
-            drawHighlightedText(button11Text, textX, textY)
-        else
-            drawButton(btnX, btnY, btnW, btnH)
-            drawText(button11Text, textX, textY)
-        end
-        if buttonClicked ~= 0 then
-            performAction()
-        end
-    end
-end
-
 -- Draw text on screen
 function drawFileData()
     local posX = 25; local posY = 75
@@ -743,32 +720,37 @@ function drawFileData()
     drawBlinkingCaret(screenWidth, screenHeight)
 end
 
--- Draw blinking caret
+-- This draws caret / text cursor as blinking.
 function drawBlinkingCaret()
-    local blinkY = 75; local blinkX = 75
-    if lines[currLine] then
-        local _, wrappedLines = ABZText:getWrap(lines[currLine], screenWidth - 120)
-        blinkX = blinkX + ABZText:getWidth(wrappedLines[#wrappedLines])
-        for i = 1, currLine - 1 do
-            if lines[i] then
-                local _, previousWrappedLines = ABZText:getWrap(lines[i], screenWidth - 120)
-                blinkY = blinkY + (#previousWrappedLines * 24) - 9
+    local blinkY, blinkX;
+    if currLine == 1 then
+        blinkY = 75; blinkX = 75
+        if lines[currLine] then
+            local _, wrappedLines = ABZText:getWrap(lines[currLine], screenWidth - 120)
+            blinkX = blinkX + ABZText:getWidth(wrappedLines[#wrappedLines])
+            for i = 1, currLine - 1 do
+                if lines[i] then
+                    local _, previousWrappedLines = ABZText:getWrap(lines[i], screenWidth - 120)
+                    blinkY = blinkY + (#previousWrappedLines * 24) - 9
+                end
             end
+            if #wrappedLines > 1 then
+                local totalHeight = #wrappedLines * ABZText:getHeight() * ABZText:getLineHeight()
+                blinkY = blinkY + totalHeight - 27
+            end
+            if blinkY >= screenHeight - 60 then
+                return
+            end
+            caretBlinking(blinkX, blinkY)
+        else
+            caretBlinking(75, blinkY)
         end
-        if #wrappedLines > 1 then
-            local totalHeight = #wrappedLines * ABZText:getHeight() * ABZText:getLineHeight()
-            blinkY = blinkY + totalHeight - 27
-        end
-        if blinkY >= screenHeight - 60 then
-            return
-        end
-        caretBlinking(blinkX, blinkY)
     else
-        caretBlinking(75, blinkY)
+
     end
 end
 
--- Draw caret
+-- This is used to draw Caret / Text Cursor.
 function caretBlinking(X, Y)
     if blink then
         love.graphics.setColor(colors.textWhite)
@@ -776,158 +758,4 @@ function caretBlinking(X, Y)
     end
 end
 
--- Performs different operations in main menu
-function performAction()
-    if buttonClicked == 1 then
-        creatingNewFile()
-    elseif buttonClicked == 2 then
-        renameFile()
-    elseif buttonClicked == 3 then
-        deleteCurrFile()
-    elseif buttonClicked == 4 then
-        -- Empty2
-    elseif buttonClicked == 5 then
-        -- Empty3
-    elseif buttonClicked == 6 then
-        clearAllData()
-    elseif buttonClicked == 7 then
-        changeEditorColor()
-    elseif buttonClicked == 8 then
-        saveDataToFile()
-    elseif buttonClicked == 9 then
-        saveFileAs()
-    elseif buttonClicked == 10 then
-        openSettings()
-    elseif buttonClicked == 11 then
-        exitWindow()
-    end
-end
-
--- Creating a new file
-function creatingNewFile()
-    love.graphics.setColor(colors.red)
-    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
-end
-
--- Rename an existing file
-function renameFile()
-    love.graphics.setColor(colors.red)
-    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
-end
-
--- Delete currently opened file
-function deleteCurrFile()
-    love.graphics.setColor(colors.red)
-    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
-end
-
--- Clear Entire Screen (Work In Progress)
-function clearAllData()
-    -- Doesn't work properly right now
-    lines = {}
-    currLine = 1
-    buttonClicked = 0
-    mainMenuClicked = false
-end
-
--- change editor window color
-function changeEditorColor()
-    love.graphics.setColor(colors.red)
-    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
-end
-
--- save file (Work In Progress)
-function saveDataToFile()
-    local txt = "Write data to file?"
-    local txtW = ABZText:getWidth(txt)
-    local saveWinH = 170;
-    local saveWinW = txtW + 150 -- 209
-    local saveWinX = screenWidth / 2 - saveWinW / 2 + 10
-    local saveWinY = screenHeight / 2 - saveWinH / 2 - 40
-    love.graphics.setColor(colors.white)
-    love.graphics.rectangle("fill", saveWinX, saveWinY, saveWinW, saveWinH, 10)
-    love.graphics.setColor(colors.lightBlack2)
-    love.graphics.rectangle("fill", saveWinX + 1, saveWinY + 1, saveWinW - 2, saveWinH - 2, 10)
-    love.graphics.setColor(colors.white)
-    love.graphics.print(txt, ABZText, screenWidth / 2 - txtW / 2 + 10, saveWinY + 30)
-    -- Yes
-    local Yes_BtnX = saveWinX + 70; local Yes_BtnY = saveWinY + saveWinH - 90
-    local Yes_BtnW = 100; local Yes_BtnH = 50
-    love.graphics.setColor(colors.white)
-    love.graphics.rectangle("fill", Yes_BtnX, Yes_BtnY, Yes_BtnW, Yes_BtnH, 5)
-    love.graphics.setColor(colors.lightBlack2)
-    love.graphics.rectangle("fill", Yes_BtnX + 1, Yes_BtnY + 1, Yes_BtnW - 2, Yes_BtnH - 2, 5)
-    love.graphics.setColor(colors.white)
-    love.graphics.print("Yes", ABZText, Yes_BtnX + Yes_BtnW / 3.5, Yes_BtnY + Yes_BtnH / 5)
-    -- No
-    local No_BtnX = saveWinX + Yes_BtnW + 100; local No_BtnY = saveWinY + saveWinH - 90
-    local No_BtnW = 100; local No_BtnH = 50
-    love.graphics.setColor(colors.white)
-    love.graphics.rectangle("fill", No_BtnX, No_BtnY, No_BtnW, No_BtnH, 5)
-    love.graphics.setColor(colors.lightBlack2)
-    love.graphics.rectangle("fill", No_BtnX + 1, No_BtnY + 1, No_BtnW - 2, No_BtnH - 2, 5)
-    love.graphics.setColor(colors.white)
-    love.graphics.print("No", ABZText, No_BtnX + No_BtnW / 3, No_BtnY + No_BtnH / 5)
-    -- Save data to file if user clicked yes
-    if saveToFileBool then
-        -- local saveToFile, error = io.open("files/" .. file, "w")
-        print(file)
-        for _, line in pairs(lines) do
-            love.filesystem.write("files/" .. file, line)
-        end
-        -- saveToFile:close()
-    end
-end
-
--- save file as
-function saveFileAs()
-    love.graphics.setColor(colors.red)
-    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
-end
-
--- open settings window
-function openSettings()
-    love.graphics.setColor(colors.red)
-    love.graphics.print("Currently In Development", screenWidth / 2 - 150, screenHeight / 2)
-end
-
--- Prompt for closing the window
-function exitWindow()
-    local text = "Do you want to exit?"
-    local textW = ABZText:getWidth(text) -- 236
-    local exitWindowH = 170; local exitWindowW = textW + 150
-    local exitWindowPosX = screenWidth / 2 - exitWindowW / 2
-    local exitWindowPosY = screenHeight / 2 - exitWindowH / 2 - 40
-    love.graphics.setColor(colors.white)
-    love.graphics.rectangle("fill", exitWindowPosX, exitWindowPosY, exitWindowW, exitWindowH, 10)
-    love.graphics.setColor(colors.lightBlack2)
-    love.graphics.rectangle("fill", exitWindowPosX + 1, exitWindowPosY + 1, exitWindowW - 2, exitWindowH - 2, 10)
-    love.graphics.setColor(colors.white)
-    love.graphics.print(text, ABZText, screenWidth / 2 - textW / 2, exitWindowPosY + 30)
-    -- Yes
-    local Yes_BtnX = exitWindowPosX + 80; local Yes_BtnY = exitWindowPosY + exitWindowH - 90
-    local Yes_BtnW = 100; local Yes_BtnH = 50
-    love.graphics.setColor(colors.white)
-    love.graphics.rectangle("fill", Yes_BtnX, Yes_BtnY, Yes_BtnW, Yes_BtnH, 5)
-    love.graphics.setColor(colors.lightBlack2)
-    love.graphics.rectangle("fill", Yes_BtnX + 1, Yes_BtnY + 1, Yes_BtnW - 2, Yes_BtnH - 2, 5)
-    love.graphics.setColor(colors.white)
-    love.graphics.print("Yes", ABZText, Yes_BtnX + Yes_BtnW / 3.5, Yes_BtnY + Yes_BtnH / 5)
-    -- No
-    local No_BtnX = exitWindowPosX + Yes_BtnW + 105; local No_BtnY = exitWindowPosY + exitWindowH - 90
-    local No_BtnW = 100; local No_BtnH = 50
-    love.graphics.setColor(colors.white)
-    love.graphics.rectangle("fill", No_BtnX, No_BtnY, No_BtnW, No_BtnH, 5)
-    love.graphics.setColor(colors.lightBlack2)
-    love.graphics.rectangle("fill", No_BtnX + 1, No_BtnY + 1, No_BtnW - 2, No_BtnH - 2, 5)
-    love.graphics.setColor(colors.white)
-    love.graphics.print("No", ABZText, No_BtnX + No_BtnW / 3, No_BtnY + No_BtnH / 5)
-    -- Close window if yes is clicked
-    if exitWindowBool then
-        love.graphics.setColor(colors.lightBlack2)
-        love.graphics.rectangle("fill", Yes_BtnX, Yes_BtnY, Yes_BtnW, Yes_BtnH, 5)
-        love.graphics.setColor(colors.red)
-        love.graphics.print("Yes", ABZText, Yes_BtnX + Yes_BtnW / 3.5, Yes_BtnY + Yes_BtnH / 5)
-        love.event.quit(0)
-    end
-end
+-- Editor caret needs to be fixed.
